@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-web
+  namespace: production
+  labels:
+    app.kubernetes.io/part-of: myapp
+    tier: frontend
+  annotations:
+    managed-by: syngit
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: myapp
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/part-of: myapp
+        tier: frontend
+      annotations:
+        managed-by: syngit
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27.0
