@@ -14,6 +14,8 @@ import (
 var (
 	ErrOverlayNotFound  = errors.New("no overlay found")
 	ErrAmbiguousOverlay = errors.New("several overlays match")
+	ErrBaseNotFound     = errors.New("no base found")
+	ErrAmbiguousBase    = errors.New("several bases match")
 )
 
 var KustomizationFileNames = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
@@ -49,6 +51,27 @@ func DetectOverlay(fsys fs.FS, config KustomizeProviderConfig) (*OverlayTarget, 
 		})
 	default:
 		return selectOverlay(candidates, "an empty config", func(*OverlayTarget) bool { return true })
+	}
+}
+
+// DetectBase returns the directory of the kustomization the overlay builds on:
+// the single resource entry of the overlay that is itself a kustomization.
+func DetectBase(fsys fs.FS, overlay *OverlayTarget) (string, error) {
+	var bases []string
+	for _, resource := range overlay.Kustomization.Resources {
+		dir := path.Join(overlay.Path, resource)
+		if isKustomization(fsys, dir) {
+			bases = append(bases, dir)
+		}
+	}
+
+	switch len(bases) {
+	case 1:
+		return bases[0], nil
+	case 0:
+		return "", fmt.Errorf("%w: %s builds on no kustomization", ErrBaseNotFound, overlay.KustomizationPath)
+	default:
+		return "", fmt.Errorf("%w: %s builds on %s", ErrAmbiguousBase, overlay.KustomizationPath, strings.Join(bases, ", "))
 	}
 }
 
