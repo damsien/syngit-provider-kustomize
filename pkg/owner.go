@@ -28,12 +28,10 @@ type resourceIndex []builtResource
 // index indexes m, one of b's builds. krusty drops the previous names of the
 // resources, so original names are rebuilt from the overlay's kustomization.
 func (b overlayBuild) index(m resmap.ResMap) (resourceIndex, error) {
-	_, kustomization, err := readKustomization(b.fSys, b.dir())
+	prefix, suffix, err := b.nameAffixes()
 	if err != nil {
 		return nil, err
 	}
-	prefix, _ := kustomization["namePrefix"].(string)
-	suffix, _ := kustomization["nameSuffix"].(string)
 
 	index := make(resourceIndex, 0, m.Size())
 	for _, res := range m.Resources() {
@@ -69,6 +67,16 @@ func (b overlayBuild) index(m resmap.ResMap) (resourceIndex, error) {
 		})
 	}
 	return index, nil
+}
+
+func (b overlayBuild) nameAffixes() (prefix, suffix string, err error) {
+	_, kustomization, err := readKustomization(b.fSys, b.dir())
+	if err != nil {
+		return "", "", err
+	}
+	prefix, _ = kustomization["namePrefix"].(string)
+	suffix, _ = kustomization["nameSuffix"].(string)
+	return prefix, suffix, nil
 }
 
 // generatorName finds the generator declared in origin.ConfiguredIn that

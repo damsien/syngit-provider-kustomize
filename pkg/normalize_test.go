@@ -10,8 +10,12 @@ import (
 
 func objectFromYAML(t *testing.T, content string) *unstructured.Unstructured {
 	t.Helper()
+	jsonContent, err := yaml.YAMLToJSON([]byte(content))
+	if err != nil {
+		t.Fatal(err)
+	}
 	obj := &unstructured.Unstructured{}
-	if err := yaml.Unmarshal([]byte(content), &obj.Object); err != nil {
+	if err := obj.UnmarshalJSON(jsonContent); err != nil {
 		t.Fatal(err)
 	}
 	return obj

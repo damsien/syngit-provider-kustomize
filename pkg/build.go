@@ -15,9 +15,7 @@ import (
 )
 
 type overlayBuild struct {
-	root, overlay string
-	// fSys holds the bundle as loaded from the repo, except for the overlay's
-	// kustomization which is left as edited for the baseline.
+	root, overlay  string
 	fSys           filesys.FileSystem
 	full, baseline resmap.ResMap
 }
@@ -40,6 +38,10 @@ func buildOverlay(repo fs.FS, root, overlay string) (overlayBuild, error) {
 	if err != nil {
 		return b, err
 	}
+	original, err := b.fSys.ReadFile(kustomizationPath)
+	if err != nil {
+		return b, err
+	}
 
 	buildMetadata, _ := kustomization["buildMetadata"].([]any)
 	if !slices.Contains(buildMetadata, any(types.OriginAnnotations)) {
@@ -55,7 +57,7 @@ func buildOverlay(repo fs.FS, root, overlay string) (overlayBuild, error) {
 	if err != nil {
 		return b, fmt.Errorf("build baseline of overlay %s: %w", overlay, err)
 	}
-	return b, nil
+	return b, b.fSys.WriteFile(kustomizationPath, original)
 }
 
 // loadBundle copies the bundle root into memory, so the overlay's

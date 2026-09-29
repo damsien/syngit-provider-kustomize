@@ -154,8 +154,8 @@ spec:
 				t.Fatal(err)
 			}
 			var want map[string]any
-			if err := yaml.Unmarshal([]byte(tt.want), &want); err != nil {
-				t.Fatal(err)
+			if tt.want != "null" {
+				want = objectFromYAML(t, tt.want).Object
 			}
 			if !reflect.DeepEqual(got, want) {
 				gotYAML, _ := yaml.Marshal(got)

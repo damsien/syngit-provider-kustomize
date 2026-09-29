@@ -1,12 +1,12 @@
 package kustomizeprovider
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"gomodules.xyz/jsonpatch/v2"
 	jsonmergepatch "gopkg.in/evanphx/json-patch.v4"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/kubernetes/scheme"
 )

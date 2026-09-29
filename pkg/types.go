@@ -1,6 +1,9 @@
 package kustomizeprovider
 
-import "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+import (
+	"gomodules.xyz/jsonpatch/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+)
 
 const (
 	BundleLabel  = "kustomize.syngit.io/bundle"
@@ -47,17 +50,23 @@ const (
 
 type Decision struct {
 	// BundleRoot is the repo path of the bundle, from RootAnnotation.
-	BundleRoot    string
-	Overlay       string
-	Owner         Owner
-	Action        Action
+	BundleRoot string
+	Overlay    string
+	Owner      Owner
+	Action     Action
+	// TargetPath is the repo path of the file to write or delete.
 	TargetPath    string
-	PatchStrategy PatchStrategy
-	// OriginalName is the name before namePrefix/nameSuffix, which a patch targets.
-	OriginalName  string
 	RefuseMessage string
-	// Baseline is the object built without the overlay's patches; set only for ActionPatch.
-	Baseline *unstructured.Unstructured
+	// OriginalName is the name without the overlay's namePrefix/nameSuffix,
+	// which patches target and overlay resource files hold.
+	OriginalName  string
+	PatchStrategy PatchStrategy
+	// Only one of StrategicMergePatch and JSON6902Patch is set for ActionPatch,
+	// following PatchStrategy; both are nil when the object is back to its baseline.
+	StrategicMergePatch map[string]any
+	JSON6902Patch       []jsonpatch.Operation
+	// Resource is the object to write for ActionWriteResource.
+	Resource *unstructured.Unstructured
 }
 
 type EditOp string
