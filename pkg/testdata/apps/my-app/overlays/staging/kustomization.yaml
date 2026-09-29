@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namePrefix: staging-
+resources:
+  - ../../base
+  - debug-service.yaml
+components:
+  - ../../components/monitoring
+  - ../../components/ha
+configMapGenerator:
+  - name: app-config
+    literals:
+      - LOG_LEVEL=debug
+labels:
+  - pairs:
+      kustomize.syngit.io/bundle: my-app
+      kustomize.syngit.io/overlay: staging
+commonAnnotations:
+  kustomize.syngit.io/root: apps/my-app
+generatorOptions:
+  annotations:
+    kustomize.syngit.io/generated: "true"
+patches:
+  - path: deployment-my-app.patch.yaml
