@@ -4,6 +4,7 @@ go 1.25.5
 
 require (
 	gomodules.xyz/jsonpatch/v2 v2.5.0
+	gomodules.xyz/jsonpatch/v3 v3.0.1
 	gopkg.in/evanphx/json-patch.v4 v4.13.0
 	k8s.io/api v0.35.2
 	k8s.io/apimachinery v0.35.2
