@@ -176,7 +176,7 @@ func (r resolver) withTargetPath(d Decision, autoPath string) (Decision, error) 
 		target = autoPath
 	}
 
-	overlayDir := r.overlayDir()
+	overlayDir := r.build.dir()
 	target = path.Clean(target)
 	if !strings.HasPrefix(target, overlayDir+"/") {
 		return refuse(d, "target path %s of %s is outside the overlay directory %s", target, r.obj.GetName(), overlayDir)
@@ -187,7 +187,7 @@ func (r resolver) withTargetPath(d Decision, autoPath string) (Decision, error) 
 
 func (r resolver) findPatchPath(originalName string) (string, error) {
 	b := r.build
-	_, kustomization, err := readKustomization(b.fSys, b.dir())
+	_, kustomization, err := readKustomization(b.repo, b.dir())
 	if err != nil {
 		return "", err
 	}
@@ -205,7 +205,7 @@ func (r resolver) findPatchPath(originalName string) (string, error) {
 			return "", err
 		}
 		if kind == r.obj.GetKind() && name == originalName {
-			return strings.TrimPrefix(filePath, "/"), nil
+			return filePath, nil
 		}
 	}
 	return r.defaultPath(originalName, ".patch.yaml"), nil
@@ -219,28 +219,30 @@ func patchTarget(b overlayBuild, entry map[string]any, filePath string) (kind, n
 		return kind, name, nil
 	}
 
-	content, err := b.fSys.ReadFile(filePath)
+	content, err := fs.ReadFile(b.repo, filePath)
 	if err != nil {
 		return "", "", err
 	}
+	kind, name, err = documentID(content)
+	if err != nil {
+		return "", "", fmt.Errorf("parse %s: %w", filePath, err)
+	}
+	return kind, name, nil
+}
+
+func documentID(content []byte) (kind, name string, err error) {
 	var document struct {
 		Kind     string `json:"kind"`
 		Metadata struct {
 			Name string `json:"name"`
 		} `json:"metadata"`
 	}
-	if err := yaml.Unmarshal(content, &document); err != nil {
-		return "", "", fmt.Errorf("parse %s: %w", filePath, err)
-	}
-	return document.Kind, document.Metadata.Name, nil
-}
-
-func (r resolver) overlayDir() string {
-	return path.Join(r.build.root, "overlays", r.build.overlay)
+	err = yaml.Unmarshal(content, &document)
+	return document.Kind, document.Metadata.Name, err
 }
 
 func (r resolver) defaultPath(originalName, extension string) string {
-	return path.Join(r.overlayDir(), strings.ToLower(r.obj.GetKind())+"-"+originalName+extension)
+	return path.Join(r.build.dir(), strings.ToLower(r.obj.GetKind())+"-"+originalName+extension)
 }
 
 func refuse(d Decision, format string, args ...any) (Decision, error) {

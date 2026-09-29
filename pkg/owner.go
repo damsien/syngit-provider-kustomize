@@ -70,7 +70,7 @@ func (b overlayBuild) index(m resmap.ResMap) (resourceIndex, error) {
 }
 
 func (b overlayBuild) nameAffixes() (prefix, suffix string, err error) {
-	_, kustomization, err := readKustomization(b.fSys, b.dir())
+	_, kustomization, err := readKustomization(b.repo, b.dir())
 	if err != nil {
 		return "", "", err
 	}
@@ -83,7 +83,7 @@ func (b overlayBuild) nameAffixes() (prefix, suffix string, err error) {
 // produced name, which is <generator><suffix>, followed by -<hash> unless
 // the hash is disabled.
 func (b overlayBuild) generatorName(origin *resource.Origin, name, suffix string) (string, error) {
-	_, kustomization, err := readKustomization(b.fSys, path.Dir(path.Join(b.dir(), origin.ConfiguredIn)))
+	_, kustomization, err := readKustomization(b.repo, path.Dir(path.Join(b.dir(), origin.ConfiguredIn)))
 	if err != nil {
 		return "", err
 	}

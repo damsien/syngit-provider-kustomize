@@ -91,3 +91,17 @@ type Edit struct {
 	// Entry is a resources: path, or a patches: item (path, and target for JSON6902).
 	Entry any
 }
+
+// Changes are the repo changes for one object, with paths relative to the repo root.
+type Changes struct {
+	Files   map[string][]byte
+	Deletes []string
+	Edits   []Edit
+}
+
+type Result struct {
+	// Handled is false when the object has no BundleLabel.
+	Handled  bool
+	Decision Decision
+	Changes
+}

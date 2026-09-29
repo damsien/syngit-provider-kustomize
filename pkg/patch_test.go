@@ -107,7 +107,6 @@ metadata: {name: my-app}
 spec:
   template:
     spec:
-      $setElementOrder/containers: [{name: app}]
       containers: [{name: app, image: "nginx:1.28"}]
 `,
 		},
@@ -127,7 +126,6 @@ metadata: {name: my-app}
 spec:
   template:
     spec:
-      $setElementOrder/containers: [{name: app}]
       containers:
         - name: app
           envFrom: [{configMapRef: {name: app-config}}, {secretRef: {name: creds}}]

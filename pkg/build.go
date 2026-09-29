@@ -1,6 +1,7 @@
 package kustomizeprovider
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
@@ -15,30 +16,26 @@ import (
 )
 
 type overlayBuild struct {
+	repo           fs.FS
 	root, overlay  string
-	fSys           filesys.FileSystem
 	full, baseline resmap.ResMap
 }
 
+// dir is the repo path of the overlay.
 func (b overlayBuild) dir() string {
-	return path.Join("/", b.root, "overlays", b.overlay)
+	return path.Join(b.root, "overlays", b.overlay)
 }
 
 // buildOverlay builds overlays/<overlay> of the bundle at root twice: as in git
 // (full), and without the overlay's patches: entries.
 func buildOverlay(repo fs.FS, root, overlay string) (overlayBuild, error) {
-	b := overlayBuild{root: root, overlay: overlay}
-	var err error
-	b.fSys, err = loadBundle(repo, root)
+	b := overlayBuild{repo: repo, root: root, overlay: overlay}
+	fSys, err := loadBundle(repo, root)
 	if err != nil {
 		return b, err
 	}
 
-	kustomizationPath, kustomization, err := readKustomization(b.fSys, b.dir())
-	if err != nil {
-		return b, err
-	}
-	original, err := b.fSys.ReadFile(kustomizationPath)
+	kustomizationPath, kustomization, err := readKustomization(repo, b.dir())
 	if err != nil {
 		return b, err
 	}
@@ -47,17 +44,17 @@ func buildOverlay(repo fs.FS, root, overlay string) (overlayBuild, error) {
 	if !slices.Contains(buildMetadata, any(types.OriginAnnotations)) {
 		kustomization["buildMetadata"] = append(buildMetadata, types.OriginAnnotations)
 	}
-	b.full, err = runKustomize(b.fSys, b.dir(), kustomizationPath, kustomization)
+	b.full, err = runKustomize(fSys, kustomizationPath, kustomization)
 	if err != nil {
 		return b, fmt.Errorf("build overlay %s: %w", overlay, err)
 	}
 
 	delete(kustomization, "patches")
-	b.baseline, err = runKustomize(b.fSys, b.dir(), kustomizationPath, kustomization)
+	b.baseline, err = runKustomize(fSys, kustomizationPath, kustomization)
 	if err != nil {
 		return b, fmt.Errorf("build baseline of overlay %s: %w", overlay, err)
 	}
-	return b, b.fSys.WriteFile(kustomizationPath, original)
+	return b, nil
 }
 
 // loadBundle copies the bundle root into memory, so the overlay's
@@ -80,13 +77,13 @@ func loadBundle(repo fs.FS, root string) (filesys.FileSystem, error) {
 	return fSys, nil
 }
 
-func readKustomization(fSys filesys.FileSystem, dir string) (string, map[string]any, error) {
+func readKustomization(repo fs.FS, dir string) (string, map[string]any, error) {
 	for _, name := range konfig.RecognizedKustomizationFileNames() {
 		p := path.Join(dir, name)
-		if !fSys.Exists(p) {
+		content, err := fs.ReadFile(repo, p)
+		if errors.Is(err, fs.ErrNotExist) {
 			continue
 		}
-		content, err := fSys.ReadFile(p)
 		if err != nil {
 			return "", nil, err
 		}
@@ -99,13 +96,14 @@ func readKustomization(fSys filesys.FileSystem, dir string) (string, map[string]
 	return "", nil, fmt.Errorf("no kustomization file in %s", dir)
 }
 
-func runKustomize(fSys filesys.FileSystem, dir, kustomizationPath string, kustomization map[string]any) (resmap.ResMap, error) {
+func runKustomize(fSys filesys.FileSystem, kustomizationPath string, kustomization map[string]any) (resmap.ResMap, error) {
 	content, err := yaml.Marshal(kustomization)
 	if err != nil {
 		return nil, err
 	}
+	kustomizationPath = path.Join("/", kustomizationPath)
 	if err := fSys.WriteFile(kustomizationPath, content); err != nil {
 		return nil, err
 	}
-	return krusty.MakeKustomizer(krusty.MakeDefaultOptions()).Run(fSys, dir)
+	return krusty.MakeKustomizer(krusty.MakeDefaultOptions()).Run(fSys, path.Dir(kustomizationPath))
 }

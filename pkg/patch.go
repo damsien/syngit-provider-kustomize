@@ -2,6 +2,7 @@ package kustomizeprovider
 
 import (
 	"fmt"
+	"strings"
 
 	"gomodules.xyz/jsonpatch/v2"
 	jsonmergepatch "gopkg.in/evanphx/json-patch.v4"
@@ -37,6 +38,7 @@ func strategicMergePatch(live, baseline *unstructured.Unstructured, originalName
 	if err := json.Unmarshal(diff, &patch); err != nil {
 		return nil, err
 	}
+	dropSetElementOrder(patch)
 	if len(patch) == 0 {
 		return nil, nil
 	}
@@ -46,6 +48,25 @@ func strategicMergePatch(live, baseline *unstructured.Unstructured, originalName
 		return nil, err
 	}
 	return patch, nil
+}
+
+// kustomize does not apply $setElementOrder directives: it copies them into
+// the built object. The list order they carry is not needed in a patch.
+func dropSetElementOrder(value any) {
+	switch v := value.(type) {
+	case map[string]any:
+		for key, item := range v {
+			if strings.HasPrefix(key, "$setElementOrder/") {
+				delete(v, key)
+			} else {
+				dropSetElementOrder(item)
+			}
+		}
+	case []any:
+		for _, item := range v {
+			dropSetElementOrder(item)
+		}
+	}
 }
 
 // json6902Patch diffs two normalized objects into JSON6902 operations. It
