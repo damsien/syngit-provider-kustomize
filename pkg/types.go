@@ -5,6 +5,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+// ProviderAnnotation set to "enabled" on a RemoteSyncer turns the provider on for it.
+const ProviderAnnotation = "kustomize.syngit.io/provider"
+
 const (
 	BundleLabel  = "kustomize.syngit.io/bundle"
 	OverlayLabel = "kustomize.syngit.io/overlay"
