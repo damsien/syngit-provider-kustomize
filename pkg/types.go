@@ -1,7 +1,7 @@
 package kustomizeprovider
 
 import (
-	"gomodules.xyz/jsonpatch/v2"
+	"gomodules.xyz/jsonpatch/v3"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 

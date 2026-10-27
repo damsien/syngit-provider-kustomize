@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gomodules.xyz/jsonpatch/v2"
-	jsonmergepatch "gopkg.in/evanphx/json-patch.v4"
+	"gomodules.xyz/jsonpatch/v3"
+	jsonmergepatch "gopkg.in/evanphx/json-patch.v5"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
